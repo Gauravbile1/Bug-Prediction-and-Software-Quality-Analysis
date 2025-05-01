@@ -8,8 +8,8 @@ from sklearn.ensemble import RandomForestClassifier
 st.set_page_config(page_title="Bug Prediction App", layout="wide")
 
 # Load model and vectorizer
-model_path = "C:/Users/Gaurav Bile/Videos/1Study/SKY internship/Bug Prediction and Software Quality Analysis/bug_prediction_model.pkl"
-vectorizer_path = "C:/Users/Gaurav Bile/Videos/1Study/SKY internship/Bug Prediction and Software Quality Analysis/vectorizer.pkl"
+model_path = "bug_prediction_model.pkl"
+vectorizer_path = "vectorizer.pkl"
 
 try:
     with open(model_path, 'rb') as model_file:
