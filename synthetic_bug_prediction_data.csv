@@ -1,0 +1,11 @@
+title,body,message,label
+Fix crash in authentication module,App crashes when invalid credentials are submitted.,[BUGFIX] Crash on invalid credentials.,1
+Improve dashboard UI responsiveness,UI lags slightly on slower devices.,[IMPROVEMENT] UI responsiveness.,0
+Resolve memory leak in data processing,App memory increases continuously during heavy use.,[BUG] Memory leak fix in data processing.,1
+Refactor user profile component,Code cleanup for better readability.,[REFACTOR] Cleaned user profile code.,0
+Correct index error in pagination logic,Pagination fails on the last page.,[FIX] Pagination index error.,1
+Update dependencies to latest versions,Upgraded packages to avoid vulnerabilities.,[UPDATE] Dependency upgrades.,0
+Handle null values in login process,Login module was not handling missing inputs.,[BUG] Handled null values in login.,1
+Improve logging details for analytics,Added more log events for tracking.,[LOGGING] Added analytics logs.,0
+Fix off-by-one error in loop,Loop was skipping last element in array.,[FIX] Corrected loop logic.,1
+Enhance search performance with caching,Used caching to reduce repeated queries.,[PERF] Added caching to search queries.,0

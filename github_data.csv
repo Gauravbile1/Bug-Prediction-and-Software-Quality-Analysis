@@ -1,0 +1,1192 @@
+title,body,labels,state,is_buggy,author,message
+,,[],,0,Zeyu Chen,"[SPARK-51358][SS] Introduce snapshot upload lag detection through StateStoreCoordinator
+
+### What changes were proposed in this pull request?
+
+SPARK-51358
+
+This PR adds detection logic + logging to detect delays in snapshot uploads across all state store instances (both RocksDB and HDFSBacked). The main snapshot upload reporting logic is done through RPC calls from RocksDB.scala and HDFSStateStoreProvider to the StateStoreCoordinator, so that events are not dependent on streaming query progress reports.
+
+### Why are the changes needed?
+
+This allows us to enable observability through dashboards and alerts, helping us understand the frequency of lag in production.
+
+### Does this PR introduce _any_ user-facing change?
+
+No
+
+### How was this patch tested?
+
+Ten new tests are added in StateStoreCoordinatorSuite (4 RocksDB, 4 HDFS, 3 edge cases), while taking consideration join and non-joining stateful queries.
+
+One of these test is used to verify that the coordinator will not report any state store as lagging if changelog checkpointing is disabled.
+
+The other test verifies that query restarts do not cause the coordinator to report every instance as lagging.
+
+Another test uses AvailableNow triggers in short batch durations to verify that repeated starts/stops can still report lagging state stores.
+
+### Was this patch authored or co-authored using generative AI tooling?
+
+No
+
+Closes #50123 from zecookiez/SPARK-51358.
+
+Lead-authored-by: Zeyu Chen <zycm03@gmail.com>
+Co-authored-by: Zeyu Chen <ZYCM03@gmail.com>
+Signed-off-by: Jungtaek Lim <kabhwan.opensource@gmail.com>"
+,,[],,0,Bobby Wang,"[SPARK-51537][CONNECT][CORE][FOLLOW-UP][TEST] Add test to ensure Spark plugins are not reloaded
+
+### What changes were proposed in this pull request?
+
+This PR adds a unit test to verify that Spark plugin JARs specified via `--jars` are not reloaded.
+
+### Why are the changes needed?
+
+This PR is a followup of https://github.com/apache/spark/pull/50334#discussion_r2015850636
+
+### Does this PR introduce _any_ user-facing change?
+No
+
+### How was this patch tested?
+
+The test added can pass
+
+### Was this patch authored or co-authored using generative AI tooling?
+No
+
+Closes #50526 from wbo4958/SPARK-51537-followup.
+
+Authored-by: Bobby Wang <wbo4958@gmail.com>
+Signed-off-by: Hyukjin Kwon <gurwls223@apache.org>"
+,,[],,0,Xiaonan Yang,"[SPARK-51503][SQL] Support Variant type in XML scan
+
+### What changes were proposed in this pull request?
+
+This PR introduces the capability of reading XML data as Variant type. It includes the Variant support in both XML scan and the `from_xml` SQL expression. Writing variant values to XML will be supported in a subsequent PR.
+
+Reading XML as Variant will follow the similar rules as reading XML as structs and use the same options. There are two modes of reading XML data as Variants:
+- The first mode is to ingest an entire XML file as a variant via a new `singleVariantColumn` option. The option specifies the name of the single output column with variant type. Once the option is set, the schema inference stage is skipped and a single variant type is used as the schema of the XML scan. In the parsing stage, each XML record enclosed by the `rowTag` option will be converted to a single variant object and the child elements are recursively parsed as variant types.
+- The second mode is specifying a column as the variant type, which can be achieved by providing a defined schema. In this mode, fields not specified as variants will be parsed as non-variant values following the existing behavior, and fields specified as variants will be parsed as variants.
+
+### Why are the changes needed?
+
+Allow users to ingest XML data as Variants
+
+### Does this PR introduce _any_ user-facing change?
+
+No
+
+### How was this patch tested?
+
+New unit tests are added.
+
+### Was this patch authored or co-authored using generative AI tooling?
+
+No.
+
+Closes #50300 from xiaonanyang-db/SPARK-51503.
+
+Authored-by: Xiaonan Yang <xiaonan.yang@databricks.com>
+Signed-off-by: Hyukjin Kwon <gurwls223@apache.org>"
+,,[],,0,Gengliang Wang,"[SPARK-51723][SQL] Add DSv2 APIs for create/get table constraints
+
+### What changes were proposed in this pull request?
+
+This PR adds the following DSv2 APIs as per SPIP [doc](https://docs.google.com/document/d/1EHjB4W1LjiXxsK_G7067j9pPX0y15LUF1Z5DlUPoPIo/):
+* Constraints info from a DSV2 table
+* Create table with constraints
+
+### Why are the changes needed?
+
+For constraints support in Spark
+
+### Does this PR introduce _any_ user-facing change?
+
+No
+
+### How was this patch tested?
+
+New UT
+
+### Was this patch authored or co-authored using generative AI tooling?
+
+No
+
+Closes #50519 from gengliangwang/dsv2Changes.
+
+Authored-by: Gengliang Wang <gengliang@apache.org>
+Signed-off-by: Gengliang Wang <gengliang@apache.org>"
+,,[],,0,Anoop Johnson,"[SPARK-51726][SQL] Use TableInfo for Stage CREATE/REPLACE/CREATE OR REPLACE table
+
+### What changes were proposed in this pull request?
+
+Followup of https://github.com/apache/spark/pull/50137 for the table replace methods in StagingTableCatalog.
+
+### Why are the changes needed?
+
+To make it easier to add new parameters such as constraints.
+
+### Does this PR introduce _any_ user-facing change?
+Yes, but backwards compatible by providing a default implementation.
+
+### How was this patch tested?
+Existing tests
+
+### Was this patch authored or co-authored using generative AI tooling?
+No
+
+Closes #50521 from anoopj/replace.
+
+Authored-by: Anoop Johnson <anoop@apache.org>
+Signed-off-by: Gengliang Wang <gengliang@apache.org>"
+,,[],,0,summaryzb,"[SPARK-51691][CORE][TESTS] SerializationDebugger should swallow exception when try to find the reason of serialization problem
+
+### What changes were proposed in this pull request?
+Catch `SparkRuntimeException` when deep into serialization exception stack during unit test.
+
+### Why are the changes needed?
+Present a clearer serialization exception stack hierarchy during test, `toString` implementation of `TreeNode` may throw exception since  `SQLConf.get` check. It is helpful for debug the real problem
+
+### Does this PR introduce _any_ user-facing change?
+Yes, but it only take effect in unit test.
+User will see the direct serialization exception and the reference chain beyond the root cause.
+Before this pr, user will get confuse when unrelated exception is shown
+```
+WARN org.apache.spark.serializer.SerializationDebugger: Exception in serialization debugger
+org.apache.spark.SparkRuntimeException: Cannot get SQLConf inside scheduler event loop thread.
+    at org.apache.spark.sql.errors.QueryExecutionErrors$.cannotGetSQLConfInSchedulerEventLoopThreadError(QueryExecutionErrors.scala:2002)
+    at org.apache.spark.sql.internal.SQLConf$.get(SQLConf.scala:225)
+    at org.apache.spark.sql.execution.ScalarSubquery.toString(subquery.scala:69)
+    at java.lang.String.valueOf(String.java:2994)
+    at scala.collection.mutable.StringBuilder.append(StringBuilder.scala:203)
+    at scala.collection.immutable.Stream.addString(Stream.scala:701)
+    at scala.collection.TraversableOnce.mkString(TraversableOnce.scala:377)
+org.apache.spark.SparkException: Job aborted due to stage failure: Task not serializable: java.io.NotSerializableException:
+org.apache.spark.SimpleFutureAction
+```
+After this pr
+```
+org.apache.spark.SparkException: Job aborted due to stage failure: Task not serializable: java.io.NotSerializableException: org.apache.spark.SimpleFutureAction
+Serialization stack:
+	- object not serializable (class: org.apache.spark.SimpleFutureAction, value: org.apache.spark.SimpleFutureAction4050649d)
+	- writeObject data (class: java.util.concurrent.ConcurrentHashMap)
+	- object (class java.util.concurrent.ConcurrentHashMap)
+	....(not shown)
+```
+
+### How was this patch tested?
+Pass GitHub Actions
+
+### Was this patch authored or co-authored using generative AI tooling?
+No
+
+Closes #50489 from summaryzb/SPARK-51691.
+
+Authored-by: summaryzb <summaryzb@gmail.com>
+Signed-off-by: yangjie01 <yangjie01@baidu.com>"
+,,[],,0,yangjie01,"[SPARK-51761][INFRA] Add a daily test using the Ubuntu Arm Runner
+
+### What changes were proposed in this pull request?
+Standard GitHub-hosted runners have added the combination of `Linux + Arm64`. This pull request adds a daily test for this scenario.
+
+- https://docs.github.com/en/actions/using-github-hosted-runners/using-github-hosted-runners/about-github-hosted-runners
+- https://github.com/actions/partner-runner-images/blob/main/images/arm-ubuntu-24-image.md
+
+![image](https://github.com/user-attachments/assets/70ac8cf2-2b98-45b7-8a91-b7ecdbb4f9cd)
+
+### Why are the changes needed?
+Check the availability of Spark on `Linux + Arm64`.
+
+### Does this PR introduce _any_ user-facing change?
+No
+
+### How was this patch tested?
+Monitor Daily test after merged.
+
+### Was this patch authored or co-authored using generative AI tooling?
+No
+
+Closes #50553 from LuciferYang/arm-daily-test.
+
+Authored-by: yangjie01 <yangjie01@baidu.com>
+Signed-off-by: yangjie01 <yangjie01@baidu.com>"
+,,[],,0,yangjie01,"[SPARK-51760][BUILD] Upgrade ASM to 9.8
+
+### What changes were proposed in this pull request?
+This PR aims to upgrade ASM from 9.7.1 to 9.8.
+
+### Why are the changes needed?
+The new version is intended to support Java 25:
+
+- new Opcodes.V25 constant for Java 25
+- bug fixes
+   - Fix one more copy operation on DUP2
+   - 318015: Valid bytecode for jvm, but failed to pass the CheckClassAdapter.
+   - `ASMifier` should print calls to `valueOf` instead of deprecated constructors of primitive wrappers
+
+### Does this PR introduce _any_ user-facing change?
+No
+
+### How was this patch tested?
+Pass GitHub Actions
+
+### Was this patch authored or co-authored using generative AI tooling?
+No
+
+Closes #50543 from LuciferYang/asm-9.8.
+
+Authored-by: yangjie01 <yangjie01@baidu.com>
+Signed-off-by: yangjie01 <yangjie01@baidu.com>"
+,,[],,0,yangjie01,"[SPARK-51630][CORE][TESTS] Remove `pids` size check from ""SPARK-45907: Use ProcessHandle APIs to computeProcessTree in ProcfsMetricsGetter""
+
+### What changes were proposed in this pull request?
+This PR removes the size check for `pids` from the test case titled ""SPARK-45907: Use ProcessHandle APIs to computeProcessTree in ProcfsMetricsGetter"".
+
+### Why are the changes needed?
+To avoid potential test instability, the test case 'SPARK-45907: Use ProcessHandle APIs to computeProcessTree in ProcfsMetricsGetter' may fail when tested in the following environment:
+
+```
+Apple M3
+macOS 15.4
+zulu 17.0.14
+```
+
+run `build/sbt ""core/testOnly org.apache.spark.ui.UISeleniumSuite org.apache.spark.executor.ProcfsMetricsGetterSuite""`
+
+```
+[info] UISeleniumSuite:
+[info] - all jobs page should be rendered even though we configure the scheduling mode to fair (4 seconds, 202 milliseconds)
+[info] - effects of unpersist() / persist() should be reflected (2 seconds, 845 milliseconds)
+[info] - failed stages should not appear to be active (2 seconds, 455 milliseconds)
+[info] - spark.ui.killEnabled should properly control kill button display (8 seconds, 610 milliseconds)
+[info] - jobs page should not display job group name unless some job was submitted in a job group (2 seconds, 546 milliseconds)
+[info] - job progress bars should handle stage / task failures (2 seconds, 610 milliseconds)
+[info] - job details page should display useful information for stages that haven't started (2 seconds, 292 milliseconds)
+[info] - job progress bars / cells reflect skipped stages / tasks (2 seconds, 304 milliseconds)
+[info] - stages that aren't run appear as 'skipped stages' after a job finishes (2 seconds, 201 milliseconds)
+[info] - jobs with stages that are skipped should show correct link descriptions on all jobs page (2 seconds, 188 milliseconds)
+[info] - attaching and detaching a new tab (2 seconds, 268 milliseconds)
+[info] - kill stage POST/GET response is correct (173 milliseconds)
+[info] - kill job POST/GET response is correct (141 milliseconds)
+[info] - stage & job retention (2 seconds, 661 milliseconds)
+[info] - live UI json application list (2 seconds, 187 milliseconds)
+[info] - job stages should have expected dotfile under DAG visualization (2 seconds, 126 milliseconds)
+[info] - stages page should show skipped stages (2 seconds, 651 milliseconds)
+[info] - Staleness of Spark UI should not last minutes or hours (2 seconds, 167 milliseconds)
+[info] - description for empty jobs (2 seconds, 242 milliseconds)
+[info] - Support disable event timeline (4 seconds, 585 milliseconds)
+[info] - SPARK-41365: Stage page can be accessed if URI was encoded twice (2 seconds, 306 milliseconds)
+[info] - SPARK-44895: Add 'daemon', 'priority' for ThreadStackTrace (2 seconds, 219 milliseconds)
+[info] ProcfsMetricsGetterSuite:
+[info] - testGetProcessInfo (1 millisecond)
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+[info] - SPARK-34845: partial metrics shouldn't be returned (493 milliseconds)
+[info] - SPARK-45907: Use ProcessHandle APIs to computeProcessTree in ProcfsMetricsGetter *** FAILED *** (10 seconds, 149 milliseconds)
+[info]   The code passed to eventually never returned normally. Attempted 102 times over 10.036665625 seconds. Last failure message: 1 did not equal 3. (ProcfsMetricsGetterSuite.scala:87)
+[info]   org.scalatest.exceptions.TestFailedDueToTimeoutException:
+[info]   at org.scalatest.enablers.Retrying$$anon$4.tryTryAgain$2(Retrying.scala:219)
+[info]   at org.scalatest.enablers.Retrying$$anon$4.retry(Retrying.scala:226)
+[info]   at org.scalatest.concurrent.Eventually.eventually(Eventually.scala:313)
+[info]   at org.scalatest.concurrent.Eventually.eventually$(Eventually.scala:312)
+[info]   at org.scalatest.concurrent.Eventually$.eventually(Eventually.scala:457)
+[info]   at org.apache.spark.executor.ProcfsMetricsGetterSuite.$anonfun$new$3(ProcfsMetricsGetterSuite.scala:87)
+```
+
+After conducting an investigation, I discovered that the `eventually` block does not always capture the stage where `pids.size` is 3. Due to timing issues, it may directly capture the scenario where `pids.size` is 4. Furthermore, since the checks for `pids.contains(currentPid)` and `pids.contains(child)` are more crucial, this PR removes the check for the size of `pids`.
+
+### Does this PR introduce _any_ user-facing change?
+No
+
+### How was this patch tested?
+- Pass GitHub Actions
+
+### Was this patch authored or co-authored using generative AI tooling?
+No
+
+Closes #50545 from LuciferYang/ProcfsMetricsGetterSuite.
+
+Lead-authored-by: yangjie01 <yangjie01@baidu.com>
+Co-authored-by: YangJie <yangjie01@baidu.com>
+Signed-off-by: yangjie01 <yangjie01@baidu.com>"
+,,[],,0,Vlad Rozov,"[SPARK-51699][BUILD] Upgrade to Apache parent pom 34
+
+### What changes were proposed in this pull request?
+Upgrade Apache parent pom from version 33 to the latest version 34 along with upgrading few maven plugins versions to match those from the latest parent pom.
+
+- maven-compiler-plugin from 3.13.0 to 3.14.0
+- maven-clean-plugin from 3.4.0 to 3.4.1
+- maven-install-plugin from 3.1.2 to 3.1.4
+- maven-deploy-plugin from 3.1.2 to 3.1.4
+
+### Why are the changes needed?
+Apache parent pom version 34 includes several plugin upgrades as well as bug fixes. For the full list please see [release notes](https://github.com/apache/maven-apache-parent/releases/tag/apache-34)
+
+### Does this PR introduce _any_ user-facing change?
+No
+
+### How was this patch tested?
+Local mvn build with the new parent pom succeeds:
+```
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  15:08 min
+[INFO] Finished at: 2025-04-02T09:07:47-07:00
+[INFO] ------------------------------------------------------------------------
+```
+
+### Was this patch authored or co-authored using generative AI tooling?
+No
+
+Closes #50500 from vrozov/SPARK-51699.
+
+Authored-by: Vlad Rozov <vrozov@amazon.com>
+Signed-off-by: Kent Yao <yao@apache.org>"
+,,[],,0,Amanda Liu,"[SPARK-51747][SQL] Data source cached plan should respect options
+
+### What changes were proposed in this pull request?
+
+Data source cached plan should respect options, such as CSV delimiter. Before this, DataSourceStrategy caches the first plan and reuses it in the future, ignoring updated options. This change returns a **new plan** if options are changed.
+
+### Why are the changes needed?
+
+For example:
+
+```
+spark.sql(""CREATE TABLE t(a string, b string) USING CSV"".stripMargin)
+spark.sql(""INSERT INTO TABLE t VALUES ('a;b', 'c')"")
+
+spark.sql(""SELECT * FROM t"").show()
+spark.sql(""SELECT * FROM t WITH ('delimiter' = ';')"")
+```
+
+Expected output:
+
+ ```
++----+----+
+|col1|col2|
++----+----+
+| a;b|   c|
++----+----+
+
++----+----+
+|col1|col2|
++----+----+
+|   a| b,c|
++----+----+
+ ```
+
+Output before this PR:
+
+ ```
++----+----+
+|col1|col2|
++----+----+
+| a;b|   c|
++----+----+
+
++----+----+
+|col1|col2|
++----+----+
+| a;b|   c|
++----+----+
+```
+
+The PR is needed to get the expected result.
+
+### Does this PR introduce _any_ user-facing change?
+
+Yes, corrects the caching behavior from DataSourceStrategy
+
+### How was this patch tested?
+
+Added test in DDLSuite.scala
+
+### Was this patch authored or co-authored using generative AI tooling?
+
+No
+
+Closes #50538 from asl3/asl3/datasourcestrategycacheoptions.
+
+Lead-authored-by: Amanda Liu <amanda.liu@databricks.com>
+Co-authored-by: Gengliang Wang <gengliang@apache.org>
+Signed-off-by: Gengliang Wang <gengliang@apache.org>"
+,,[],,0,Takuya Ueshin,"[SPARK-51738][SQL][FOLLOWUP] Fix HashJoin to accept structurally-equal types
+
+### What changes were proposed in this pull request?
+
+This is a follow-up of #50537.
+
+Fixes `HashJoin` to accept structurally-equal types.
+
+### Why are the changes needed?
+
+#50537 relaxed the requirement for binary comparison, so should `HashJoin`; otherwise, it can fail with `IllegalArgumentException`.
+
+For example, in `SubquerySuite`:
+
+```scala
+sql(""""""
+      |SELECT foo IN (SELECT struct(c, d) FROM r)
+      |FROM (SELECT struct(a, b) foo FROM l)
+      |"""""".stripMargin).show()
+```
+
+fails with:
+
+```
+[info]   java.lang.IllegalArgumentException: requirement failed: Join keys from two sides should have same length and types
+[info]   at scala.Predef$.require(Predef.scala:337)
+[info]   at org.apache.spark.sql.execution.joins.HashJoin.org$apache$spark$sql$execution$joins$HashJoin$$x$6(HashJoin.scala:115)
+[info]   at org.apache.spark.sql.execution.joins.HashJoin.org$apache$spark$sql$execution$joins$HashJoin$$x$6$(HashJoin.scala:110)
+[info]   at org.apache.spark.sql.execution.joins.BroadcastHashJoinExec.org$apache$spark$sql$execution$joins$HashJoin$$x$6$lzycompute(BroadcastHashJoinExec.scala:40)
+[info]   at org.apache.spark.sql.execution.joins.BroadcastHashJoinExec.org$apache$spark$sql$execution$joins$HashJoin$$x$6(BroadcastHashJoinExec.scala:40)
+[info]   at org.apache.spark.sql.execution.joins.HashJoin.buildKeys(HashJoin.scala:110)
+[info]   at org.apache.spark.sql.execution.joins.HashJoin.buildKeys$(HashJoin.scala:110)
+[info]   at org.apache.spark.sql.execution.joins.BroadcastHashJoinExec.buildKeys$lzycompute(BroadcastHashJoinExec.scala:40)
+[info]   at org.apache.spark.sql.execution.joins.BroadcastHashJoinExec.buildKeys(BroadcastHashJoinExec.scala:40)
+[info]   at org.apache.spark.sql.execution.joins.HashJoin.buildBoundKeys(HashJoin.scala:130)
+[info]   at org.apache.spark.sql.execution.joins.HashJoin.buildBoundKeys$(HashJoin.scala:129)
+[info]   at org.apache.spark.sql.execution.joins.BroadcastHashJoinExec.buildBoundKeys$lzycompute(BroadcastHashJoinExec.scala:40)
+[info]   at org.apache.spark.sql.execution.joins.BroadcastHashJoinExec.buildBoundKeys(BroadcastHashJoinExec.scala:40)
+[info]   at org.apache.spark.sql.execution.joins.BroadcastHashJoinExec.requiredChildDistribution(BroadcastHashJoinExec.scala:63)
+...
+```
+
+### Does this PR introduce _any_ user-facing change?
+
+Yes, `HashJoin` will work.
+
+### How was this patch tested?
+
+Added the related test.
+
+### Was this patch authored or co-authored using generative AI tooling?
+
+No.
+
+Closes #50549 from ueshin/issues/SPARK-51738/hashjoin.
+
+Authored-by: Takuya Ueshin <ueshin@databricks.com>
+Signed-off-by: Wenchen Fan <wenchen@databricks.com>"
+,,[],,0,Pavle Martinovic,"[SPARK-51751][SQL] Fix multiple rCTEs for one WITH statement that reference each other
+
+### What changes were proposed in this pull request?
+
+Add a check to UnionLoopExec that the UnionLoopRef in its subtree is referring to the correct query. This is important since if we call another rCTE from it, it will also have a UnionLoopRef which needs to not be replaced with the reference.
+
+### Why are the changes needed?
+
+Multiple rCTEs within one WITH statement ended in an infinite recursion.
+
+### Does this PR introduce _any_ user-facing change?
+
+No.
+
+### How was this patch tested?
+
+New golden file test added.
+
+### Was this patch authored or co-authored using generative AI tooling?
+No.
+
+Closes #50544 from Pajaraja/pavle-martinovic_data/multiplerctesfix.
+
+Lead-authored-by: Pavle Martinovic <34302662+Pajaraja@users.noreply.github.com>
+Co-authored-by: pavle-martinovic_data <pavle.martinovic@databricks.com>
+Signed-off-by: Wenchen Fan <wenchen@databricks.com>"
+,,[],,0,Ruifeng Zheng,"[SPARK-51754][PYTHON][DOCS][TESTS] Make `sampleBy` doctest deterministic
+
+### What changes were proposed in this pull request?
+Make `sampleBy` doctest deterministic, by specifying the partitioning
+
+### Why are the changes needed?
+it fails on some envs, e.g. in my local (macos + python 3.13):
+
+```
+In [1]:         >>> from pyspark.sql.functions import col
+   ...:         >>> dataset = spark.range(0, 100).select((col(""id"") % 3).alias(""key""))
+   ...:         >>> sampled = dataset.sampleBy(""key"", fractions={0: 0.1, 1: 0.2}, seed=0)
+   ...:         >>> sampled.groupBy(""key"").count().orderBy(""key"").show()
++---+-----+
+|key|count|
++---+-----+
+|  0|    2|
+|  1|    6|
++---+-----+
+
+```
+
+### Does this PR introduce _any_ user-facing change?
+minor doc change
+
+### How was this patch tested?
+CI and manually test
+
+### Was this patch authored or co-authored using generative AI tooling?
+no
+
+Closes #50547 from zhengruifeng/py_test_sample_by.
+
+Authored-by: Ruifeng Zheng <ruifengz@apache.org>
+Signed-off-by: Ruifeng Zheng <ruifengz@apache.org>"
+,,[],,0,Ruifeng Zheng,"[SPARK-51755][INFRA][PYTHON] Set up a scheduled builder for free-threaded Python 3.13
+
+### What changes were proposed in this pull request?
+
+Set up a scheduled (every 3 days) builder for free-threaded Python 3.13
+
+### Why are the changes needed?
+https://docs.python.org/3/howto/free-threading-python.html
+
+since 3.13, Python supports free-threaded execution, in which GIL is optional.
+
+Test againt this latest feature.
+
+### Does this PR introduce _any_ user-facing change?
+No
+
+### How was this patch tested?
+PR builder with
+
+```
+default: '{""PYSPARK_IMAGE_TO_TEST"": ""python-313-nogil"", ""PYTHON_TO_TEST"": ""python3.13t"", ""PYTHON_GIL"": ""0"" }'
+```
+
+see https://github.com/zhengruifeng/spark/actions/runs/14355716572/job/40244827286
+
+[PYTHON_GIL=0](https://docs.python.org/3/using/cmdline.html#envvar-PYTHON_GIL) is to forces the GIL off
+
+- For PySpark Classic, some streaming test and ml tests are skipped;
+- For PySpark Connect, it is not supported at all (one blocker is [GRPC](https://github.com/grpc/grpc/issues/38762) which is not compatible), so **ALL** tests are skipped
+
+### Was this patch authored or co-authored using generative AI tooling?
+no
+
+Closes #50534 from zhengruifeng/infra_py313_nogil.
+
+Authored-by: Ruifeng Zheng <ruifengz@apache.org>
+Signed-off-by: Ruifeng Zheng <ruifengz@apache.org>"
+,,[],,0,ilicmarkodb,"[SPARK-51673][SQL] Apply default collation to alter view query
+
+### What changes were proposed in this pull request?
+Fixed the application of default collation in `ALTER VIEW` queries. For example, if a view has a default collation and we execute `ALTER VIEW v AS SELECT 'a' AS c1`, the default collation was not being applied to the literal `a`.
+
+### Why are the changes needed?
+Bug fix.
+
+### Does this PR introduce _any_ user-facing change?
+No.
+
+### How was this patch tested?
+Tests added to `DefaultCollationTestSuite.scala`
+
+### Was this patch authored or co-authored using generative AI tooling?
+No.
+
+Closes #50468 from ilicmarkodb/fix_alter_view.
+
+Authored-by: ilicmarkodb <marko.ilic@databricks.com>
+Signed-off-by: Max Gekk <max.gekk@gmail.com>"
+,,[],,0,Wenchen Fan,"[SPARK-51738][SQL] IN subquery with struct type
+
+### What changes were proposed in this pull request?
+
+This PR is to fix a long-standing issue that IN subquery allows the struct type field to have different names while binary comparison requires the left and right side struct-type values to have the same field name.
+
+For example, `SELECT foo IN (SELECT struct(1 a)) FROM (SELECT struct(1 b) foo)` is a valid IN subquery even though the field names are different: `a` and `b`. However, Spark will rewrite IN subquery with join and compare the struct values as the join condition. This rewrite makes the plan become unresolved because comparison operator does not allow different field names.
+
+This PR fixes it by relaxing the requirement for binary comparison. The field name and nullability doesn't matter when we compare two struct values.
+
+### Why are the changes needed?
+
+Fix potential issues. The plan validation is only enabled in tests so this unresolved plan may not cause actual issues.
+
+### Does this PR introduce _any_ user-facing change?
+
+Yes, some queries that fail to analyze before (compare structs) can now work.
+
+### How was this patch tested?
+
+new test
+
+### Was this patch authored or co-authored using generative AI tooling?
+
+no
+
+Closes #50537 from cloud-fan/subquery.
+
+Authored-by: Wenchen Fan <wenchen@databricks.com>
+Signed-off-by: Wenchen Fan <wenchen@databricks.com>"
+,,[],,0,senthh,"[SPARK-51421][SQL] Get seconds of TIME datatype
+
+### What changes were proposed in this pull request?
+This PR adds support for extracting the second component from TIME (TimeType) values in Spark SQL. For example:
+```
+scala> spark.sql(""SELECT SECOND(TIME'13:59:45.99')"").show()
++--------------------------+
+|second(TIME '13:59:45.99')|
++--------------------------+
+|                        45|
++--------------------------+
+
+scala> spark.sql(""select second(cast('12:00:01.123' as time(4)))"").show(false)
++-------------------------------------+
+|second(CAST(12:00:01.123 AS TIME(4)))|
++-------------------------------------+
+|1                                    |
++-------------------------------------+
+```
+
+### Why are the changes needed?
+Spark previously supported second() for only TIMESTAMP type values. TIME support was missing, leading to implicit casting attempt to TIMESTAMP, which was incorrect. This PR ensures that second(TIME'HH:MM:SS.######') behaves correctly without unnecessary type coercion.
+
+### Does this PR introduce _any_ user-facing change?
+Yes
+
+- Before this PR, calling second(TIME'HH:MM:SS.######') resulted in a type mismatch error or an implicit cast attempt to TIMESTAMP, which was incorrect.
+- With this PR, second(TIME'HH:MM:SS.######') now works correctly for TIME values without implicit casting.
+- Users can now extract the second component from TIME values natively.
+
+### How was this patch tested?
+By running new tests:
+
+```$ build/sbt ""test:testOnly *TimeExpressionsSuite""```
+
+### Was this patch authored or co-authored using generative AI tooling?
+No
+
+Closes #50525 from senthh/getSeconds.
+
+Authored-by: senthh <senthil.kumar@acceldata.io>
+Signed-off-by: Max Gekk <max.gekk@gmail.com>"
+,,[],,0,Kun Wan,"[SPARK-51512][CORE] Filter out null MapStatus when cleaning up shuffle data with ExternalShuffleService
+
+### What changes were proposed in this pull request?
+
+When the application crashes unexpectedly, the registered map statuses may contain null values, therefore we should skip these null values when cleaning up shuffle data with ExternalShuffleService.
+
+### Why are the changes needed?
+
+Small bug fix
+
+```log
+25/03/14 15:41:35 ERROR ContextCleaner: Error cleaning shuffle 4
+org.apache.spark.SparkException: Exception thrown in awaitResult:
+	at org.apache.spark.util.SparkThreadUtils$.awaitResult(SparkThreadUtils.scala:53)
+	at org.apache.spark.util.ThreadUtils$.awaitResult(ThreadUtils.scala:342)
+	at org.apache.spark.rpc.RpcTimeout.awaitResult(RpcTimeout.scala:75)
+	at org.apache.spark.rpc.RpcEndpointRef.askSync(RpcEndpointRef.scala:101)
+	at org.apache.spark.rpc.RpcEndpointRef.askSync(RpcEndpointRef.scala:85)
+	at org.apache.spark.storage.BlockManagerMaster.removeShuffle(BlockManagerMaster.scala:204)
+	at org.apache.spark.shuffle.sort.io.LocalDiskShuffleDriverComponents.removeShuffle(LocalDiskShuffleDriverComponents.java:47)
+	at org.apache.spark.ContextCleaner.doCleanupShuffle(ContextCleaner.scala:241)
+	at org.apache.spark.ContextCleaner.$anonfun$keepCleaning$3(ContextCleaner.scala:203)
+	at org.apache.spark.ContextCleaner.$anonfun$keepCleaning$3$adapted(ContextCleaner.scala:196)
+	at scala.Option.foreach(Option.scala:437)
+	at org.apache.spark.ContextCleaner.$anonfun$keepCleaning$1(ContextCleaner.scala:196)
+	at org.apache.spark.util.Utils$.tryOrStopSparkContext(Utils.scala:1383)
+	at org.apache.spark.ContextCleaner.org$apache$spark$ContextCleaner$$keepCleaning(ContextCleaner.scala:190)
+	at org.apache.spark.ContextCleaner$$anon$1.run(ContextCleaner.scala:80)
+Caused by: java.lang.NullPointerException: Cannot invoke ""org.apache.spark.scheduler.MapStatus.location()"" because ""mapStatus"" is null
+	at org.apache.spark.storage.BlockManagerMasterEndpoint.$anonfun$removeShuffle$3(BlockManagerMasterEndpoint.scala:423)
+	at scala.collection.ArrayOps$.foreach$extension(ArrayOps.scala:1323)
+	at org.apache.spark.storage.BlockManagerMasterEndpoint.$anonfun$removeShuffle$2(BlockManagerMasterEndpoint.scala:421)
+	at org.apache.spark.storage.BlockManagerMasterEndpoint.$anonfun$removeShuffle$2$adapted(BlockManagerMasterEndpoint.scala:420)
+	at org.apache.spark.ShuffleStatus.$anonfun$withMapStatuses$1(MapOutputTracker.scala:435)
+	at org.apache.spark.ShuffleStatus.withReadLock(MapOutputTracker.scala:72)
+	at org.apache.spark.ShuffleStatus.withMapStatuses(MapOutputTracker.scala:435)
+	at org.apache.spark.storage.BlockManagerMasterEndpoint.$anonfun$removeShuffle$1(BlockManagerMasterEndpoint.scala:420)
+	at org.apache.spark.storage.BlockManagerMasterEndpoint.$anonfun$removeShuffle$1$adapted(BlockManagerMasterEndpoint.scala:419)
+	at scala.Option.foreach(Option.scala:437)
+	at org.apache.spark.storage.BlockManagerMasterEndpoint.org$apache$spark$storage$BlockManagerMasterEndpoint$$removeShuffle(BlockManagerMasterEndpoint.scala:419)
+	at org.apache.spark.storage.BlockManagerMasterEndpoint$$anonfun$receiveAndReply$1.applyOrElse(BlockManagerMasterEndpoint.scala:201)
+	at org.apache.spark.rpc.netty.Inbox.$anonfun$process$1(Inbox.scala:104)
+	at org.apache.spark.rpc.netty.Inbox.safelyCall(Inbox.scala:216)
+	at org.apache.spark.rpc.netty.Inbox.process(Inbox.scala:101)
+	at org.apache.spark.rpc.netty.MessageLoop.org$apache$spark$rpc$netty$MessageLoop$$receiveLoop(MessageLoop.scala:76)
+	at org.apache.spark.rpc.netty.MessageLoop$$anon$1.run(MessageLoop.scala:42)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+```
+
+### Does this PR introduce _any_ user-facing change?
+
+No
+
+### How was this patch tested?
+
+Local test
+
+### Was this patch authored or co-authored using generative AI tooling?
+
+No
+
+Closes #50277 from wankunde/SPARK-51512.
+
+Authored-by: Kun Wan <wankunde@163.com>
+Signed-off-by: Kent Yao <yao@apache.org>"
+,,[],,0,Mihailo Timotic,"[SPARK-51732][SQL] Apply `rpad` on attributes with same `ExprId` if they need to be deduplicated
+
+### What changes were proposed in this pull request?
+This PR fixes a case where `rpad` is not applied on attributes that have the same `ExprId` even though those attributes should be deduplicated.
+
+### Why are the changes needed?
+For example, consider the following query:
+
+```
+CREATE OR REPLACE TABLE t(a CHAR(50));
+SELECT t1.aFROM t t1
+WHERE (SELECT count(*) AS item_cnt FROM t t2 WHERE (t1.a = t2.a)) > 0
+```
+In the above case, `ApplyCharTypePadding` will run for subquery where `t1.a` and `t2.a` will reference the same `ExprId`, therefore we won't apply `rpad`. However, after `DeduplicateRelations` runs for outer query, `t1.a` and `t2.a` will get different `ExprIds` and would therefore need `rpad`. However, this doesn't happen because `ApplyCharTypePadding` for outer query does not recurse into the subquery.
+
+On the other hand, for a query:
+
+```
+SELECT t1.a
+FROM t t1, t t2
+WHERE t1.a = t2.a
+```
+`ApplyCharTypePadding` will correctly add `rpad` to both `t1.a` and `t2.a` because attributes will first be deduplicated.
+
+In particular, this fixes a code-path when `readSideCharPadding` is off and `LEGACY_NO_CHAR_PADDING_IN_PREDICATE` is also false
+
+### Does this PR introduce _any_ user-facing change?
+
+### How was this patch tested?
+
+### Was this patch authored or co-authored using generative AI tooling?
+No
+
+Closes #50527 from mihailotim-db/mihailotim-db/apply_char_type_padding_subqueries.
+
+Authored-by: Mihailo Timotic <mihailo.timotic@databricks.com>
+Signed-off-by: Wenchen Fan <wenchen@databricks.com>"
+,,[],,0,Siying Dong,"[SPARK-51714][SS] Add Failure Ingestion test to test state store checkpoint format V2
+
+### Why are the changes needed?
+The new state store checkpoint format needs failure tolerance tests to make sure the implementation is correct and delivers the behavior we would like.
+
+### Does this PR introduce _any_ user-facing change?
+No.
+
+### How was this patch tested?
+It is test code itself
+
+### Was this patch authored or co-authored using generative AI tooling?
+No.
+
+Closes #50508 from siying/ingest_failure9.
+
+Lead-authored-by: Siying Dong <dong.sy@gmail.com>
+Co-authored-by: Jungtaek Lim <kabhwan.opensource@gmail.com>
+Signed-off-by: Jungtaek Lim <kabhwan.opensource@gmail.com>"
+,,[],,0,micheal-o,"[SPARK-51717][SS][ROCKSDB] Fix SST mismatch corruption that can happen for second snapshot created for a new query
+
+### What changes were proposed in this pull request?
+Fix error: Sst file size mismatch ... MANIFEST-000005 may be corrupted.
+
+This is an edge case in SST file reuse that can only happen for the first ever RocksDB checkpoint if the following conditions happen:
+
+1. The first ever RocksDB checkpoint (e.g. for version 10) was created with x.sst, but not yet upload by maintenance
+2. The next batch using RocksDB at v10 fails and rolls back store to -1 (invalidates RocksDB)
+3. A new request to load RocksDB at v10 comes in, but v10 checkpoint is still not uploaded hence we have to start replaying changelog starting from checkpoint v0.
+4. We create a new v11 and new checkpoint with new x*.sst. v10 is now uploaded by maintenance. Then during upload of x*.sst for v11, we reuse x.sst DFS file, thinking it is the same as x*.sst.
+
+The problem here is from step 3, the way the file manager loads v0 is different from how it loads other versions. During the load of other versions, when we delete an existing local file we also delete it from file mapping. But for v0, file manager just deletes the local dir and we missed clearing the file mapping in this case. Hence the old x.sst was still showing in the file mapping at step 4. We need to fix this and also add additional size check.
+
+### Why are the changes needed?
+Can cause checkpoint corruption, hence the query will fail.
+
+### Does this PR introduce _any_ user-facing change?
+No
+
+### How was this patch tested?
+New test included
+
+### Was this patch authored or co-authored using generative AI tooling?
+No
+
+Closes #50512 from micheal-o/file_reuse_bug_for_new_query.
+
+Authored-by: micheal-o <micheal.okutubo@gmail.com>
+Signed-off-by: Jungtaek Lim <kabhwan.opensource@gmail.com>"
+,,[],,0,Cheng Pan,"[SPARK-51733][BUILD] `make-distribution.sh` supports sbt
+
+### What changes were proposed in this pull request?
+
+Make `make-distribution.sh` supports sbt, developers could switch the building tool from Maven to SBT by using `--sbt-enabled`.
+
+Note the packaging outputs are NOT exactly the same(e.g. shading rules have some differences), which should be improved gradually later.
+
+### Why are the changes needed?
+
+Reduce gaps between SBT and Maven. And SBT is generally much faster than Maven, so the change would save much time for developers' daily development for cases that require packaging and testing on a real cluster.
+
+### Does this PR introduce _any_ user-facing change?
+
+No, it's a dev-only change.
+
+### How was this patch tested?
+
+Manually tested on M1 Max
+```
+time dev/make-distribution.sh [--sbt-enabled] -Phive,hive-thriftserver,kubernetes
+```
+Maven
+```
+2235.03s user 100.81s system 306% cpu 12:41.77 total
+```
+SBT
+```
+688.54s user 43.54s system 346% cpu 3:31.43 total
+```
+
+### Was this patch authored or co-authored using generative AI tooling?
+
+No.
+
+Closes #50529 from pan3793/SPARK-51733.
+
+Authored-by: Cheng Pan <chengpan@apache.org>
+Signed-off-by: yangjie01 <yangjie01@baidu.com>"
+,,[],,0,Chenhao Li,"[SPARK-51296][SQL] Support collecting corrupt data in singleVariantColumn mode
+
+### What changes were proposed in this pull request?
+
+Currently, if the `singleVariantColumn` is specified, the schema will be a single variant column. It is then impossible to collect corrupt data, which requires the schema to contain a column for corrupt data. This PR enables collecting corrupt data in `singleVariantColumn` mode by relaxing the requirement that `singleVariantColumn` must not exist together with the user-specified schema. The new requirement is that, if the user-specified schema exists, it must either be a variant field, or a variant field plus a corrupt column field. Corrupt data can be collected in the latter case.
+
+### Why are the changes needed?
+
+It allows collecting corrupt data in `singleVariantColumn` mode.
+
+### Does this PR introduce _any_ user-facing change?
+
+No.
+
+### How was this patch tested?
+
+Unit test.
+
+### Was this patch authored or co-authored using generative AI tooling?
+
+No.
+
+Closes #50517 from chenhao-db/single_variant_column_corrupt_record.
+
+Authored-by: Chenhao Li <chenhao.li@databricks.com>
+Signed-off-by: Hyukjin Kwon <gurwls223@apache.org>"
+,,[],,0,Ruifeng Zheng,"[SPARK-49862][INFRA][PYTHON] Restore package installations for Python 3.13 daily builder
+
+### What changes were proposed in this pull request?
+Restore package installations for Python 3.13 daily builder
+
+### Why are the changes needed?
+some tests were skipped due to missed installations
+
+### Does this PR introduce _any_ user-facing change?
+no, test-only
+
+### How was this patch tested?
+PR builder with env:
+```
+default: '{""PYSPARK_IMAGE_TO_TEST"": ""python-313"", ""PYTHON_TO_TEST"": ""python3.13""}'
+```
+
+https://github.com/zhengruifeng/spark/actions/runs/14333711996/job/40175722749
+
+### Was this patch authored or co-authored using generative AI tooling?
+no
+
+Closes #50539 from zhengruifeng/infra_py313.
+
+Authored-by: Ruifeng Zheng <ruifengz@apache.org>
+Signed-off-by: Ruifeng Zheng <ruifengz@apache.org>"
+,,[],,0,Kiril Isakov,"[MINOR][PYTHON][DOCS] Fix a typo in pyspark documentation
+
+### What changes were proposed in this pull request?
+
+This PR aims to fix a minor typo in PySpark documentation.
+
+### Why are the changes needed?
+
+...
+
+### Does this PR introduce any user-facing change?
+
+No.
+
+### How was this patch tested?
+
+Pass Github Actions
+
+### Was this patch authored or co-authored using generative AI tooling?
+
+No.
+
+Closes #50492 from kirisakow/patch-20250402-fix-typo-in-pyspark-doc.
+
+Authored-by: Kiril Isakov <kirisakow@users.noreply.github.com>
+Signed-off-by: Ruifeng Zheng <ruifengz@apache.org>"
+,,[],,0,Gengliang Wang,"[SPARK-51695][SQL] Introduce Parser Changes for Table Constraints (CHECK, UNIQUE, PK, FK)
+
+### What changes were proposed in this pull request?
+
+What changes are proposed in this PR?
+
+This PR introduces parser support for ANSI SQL-compatible table constraints, including:
+
+-  CHECK
+- UNIQUE
+- PRIMARY KEY
+- FOREIGN KEY
+
+The updated parser supports these constraints in the following statements:
+
+- CREATE TABLE
+- REPLACE TABLE
+- ALTER TABLE ... ADD CONSTRAINT
+
+**Key Features**
+
+- Constraints can be named or unnamed.
+- Constraints can appear as:
+  - Column constraints, at the end of a column definition.
+  - Table constraints, declared among table elements (in any order).
+  - ALTER TABLE … ADD CONSTRAINT statements.
+-  ALTER TABLE … DROP CONSTRAINT
+
+**Table Constraint Characteristics**
+
+- ENFORCED: The constraint is validated by the Spark engine during write operations. If data violates the constraint, Spark will raise an error.
+- NOT ENFORCED: Spark does not validate the constraint during data writes; it’s treated as metadata only.
+- RELY: A user-provided hint that the constraint is known to be valid. This allows Spark to apply query optimizations based on the assumption that the constraint holds.
+- NORELY: The default.
+
+Spark does not rely on the constraint for optimizations unless:
+  - It is explicitly marked as RELY, or
+  - It is ENFORCED and has been validated by Spark.
+
+✅ CHECK Constraints
+```sql
+-- Column-level, unnamed
+CREATE TABLE t1 (
+  age INT CHECK (age > 0)
+);
+
+-- Column-level, named
+CREATE TABLE t2 (
+  age INT CONSTRAINT ck_age CHECK (age > 0)
+);
+
+-- Table-level, unnamed
+CREATE TABLE t3 (
+  age INT,
+  CHECK (age > 0)
+);
+
+-- Table-level, named
+CREATE TABLE t4 (
+  age INT,
+  CONSTRAINT ck_age CHECK (age > 0)
+);
+```
+
+🔑 PRIMARY KEY Constraints
+```sql
+-- Column-level, unnamed
+CREATE TABLE t1 (
+  id INT PRIMARY KEY
+);
+
+-- Column-level, named, RELY
+CREATE TABLE t2 (
+  id INT CONSTRAINT pk_id PRIMARY KEY RELY
+);
+
+-- Table-level, unnamed, NORELY
+CREATE TABLE t3 (
+  id INT,
+  PRIMARY KEY (id) NORELY
+);
+
+-- Table-level, named
+CREATE TABLE t4 (
+  id INT,
+  CONSTRAINT pk_id PRIMARY KEY (id)
+);
+```
+
+🔐 UNIQUE Constraints
+```sql
+-- Column-level, unnamed
+CREATE TABLE t1 (
+  email STRING UNIQUE
+);
+
+-- Column-level, named
+CREATE TABLE t2 (
+  email STRING CONSTRAINT uq_email UNIQUE
+);
+
+-- Table-level, unnamed
+CREATE TABLE t3 (
+  email STRING,
+  UNIQUE (email)
+);
+
+-- Table-level, named
+CREATE TABLE t4 (
+  email STRING,
+  CONSTRAINT uq_email UNIQUE (email)
+);
+```
+
+🔗 FOREIGN KEY Constraints
+```sql
+CREATE TABLE dept (id INT PRIMARY KEY);
+
+-- Column-level, unnamed
+CREATE TABLE emp1 (
+  dept_id INT REFERENCES dept(id)
+);
+
+-- Column-level, named
+CREATE TABLE emp2 (
+  dept_id INT CONSTRAINT fk_dept_col REFERENCES dept(id)
+);
+
+-- Table-level, unnamed
+CREATE TABLE emp3 (
+  dept_id INT,
+  FOREIGN KEY (dept_id) REFERENCES dept(id)
+);
+
+-- Table-level, named
+CREATE TABLE emp4 (
+  dept_id INT,
+  CONSTRAINT fk_dept_tbl FOREIGN KEY (dept_id) REFERENCES dept(id)
+);
+```
+
+⚙️ ALTER TABLE
+```sql
+-- Add named constraint
+ALTER TABLE t ADD CONSTRAINT ck_positive CHECK (amount > 0);
+
+-- Add unnamed constraint
+ALTER TABLE t ADD UNIQUE (email);
+ALTER TABLE t ADD PRIMARY KEY (id);
+ALTER TABLE t ADD FOREIGN KEY (dept_id) REFERENCES dept(id);
+
+-- Drop named constraint
+ALTER TABLE t DROP CONSTRAINT ck_positive;
+```
+
+### Why are the changes needed?
+
+Allow users to define, modify, and enforce table constraints in connectors that support them. This will facilitate data accuracy, ensure consistency, and enable performance optimizations in Spark.
+
+### Does this PR introduce _any_ user-facing change?
+
+Yes, introduce Parser Changes for Table Constraints (CHECK, UNIQUE, Primary Key, Foreign Key)
+
+### How was this patch tested?
+
+New tests
+
+### Was this patch authored or co-authored using generative AI tooling?
+
+No
+
+Closes #50496 from gengliangwang/parserChanges.
+
+Authored-by: Gengliang Wang <gengliang@apache.org>
+Signed-off-by: Gengliang Wang <gengliang@apache.org>"
+,,[],,0,Vladimir Golubev,"[SPARK-51611][SQL] New iteration of single-pass Analyzer functionality
+
+### What changes were proposed in this pull request?
+
+New single-pass Analyzer features:
+- GROUP BY
+- ORDER BY
+- JOIN
+- EXCEPT
+- INTERSECT
+- Correlated subqueries
+- Other small features and bugfixes
+
+### Why are the changes needed?
+
+To replace the fixed-point Analyzer with the single-pass one.
+
+### Does this PR introduce _any_ user-facing change?
+
+No, single-pass Analyzer is not yet enabled by default.
+
+### How was this patch tested?
+
+Logical plans were compared in tests with `ANALYZER_DUAL_RUN_LEGACY_AND_SINGLE_PASS_RESOLVER`.
+
+### Was this patch authored or co-authored using generative AI tooling?
+
+Yes.
+
+Closes #50406 from vladimirg-db/vladimir-golubev_data/single-pass-analyzer/new-iteration-of-features.
+
+Authored-by: Vladimir Golubev <vladimir.golubev@databricks.com>
+Signed-off-by: Wenchen Fan <wenchen@databricks.com>"
+,,[],,0,Siying Dong,"[SPARK-51724][SS] RocksDB StateStore's lineage manager should be synchronized
+
+### Why are the changes needed?
+RocksDB State Store's Lineage Manager currently isn't synchronized, but it can be accessed by both DB loading and maintenance thread. In theory, it can cause wrong lineage:
+1. maintenance thread get current lineage
+2. task commit() adds a lineage from the lienage
+3. maintenance thread does the truncation and store it back
+
+In this case, the new lineage added by 2. is lost.
+It should be fixed by simply synchronizing those operations.
+
+### Does this PR introduce _any_ user-facing change?
+No.
+
+### How was this patch tested?
+Run existing unit tests
+
+### Was this patch authored or co-authored using generative AI tooling?
+No.
+
+Closes #50520 from siying/lineagemanagerrace.
+
+Authored-by: Siying Dong <dong.sy@gmail.com>
+Signed-off-by: Jungtaek Lim <kabhwan.opensource@gmail.com>"
+,,[],,0,Xi Lyu,"[SPARK-51711][ML][CONNECT] Memory based MLCache eviction policy
+
+### What changes were proposed in this pull request?
+
+Currently the ML Cache is limited by the number of cache entries (100 entries at this time), but it is not ideal because model size varies.
+
+In this PR, we are updating the MLCache model eviction policy to be memory based, i.e. to evict old models if the total size of models is greater than a limit.
+
+Besides, two new internal Spark confs are introduced:
+* `spark.connect.session.connectML.mlCache.maxSize`: Maximum size of the MLCache per session. The cache will evict the least recently used models if the size exceeds this limit.
+* `spark.connect.session.connectML.mlCache.timeout`: Timeout of models in MLCache. Models will be evicted from the cache if they are not used for this amount of time.
+
+### Why are the changes needed?
+This improve the memory management of MLCache.
+
+### Does this PR introduce _any_ user-facing change?
+No.
+
+### How was this patch tested?
+New test and existing tests.
+
+### Was this patch authored or co-authored using generative AI tooling?
+No.
+
+Closes #50530 from xi-db/mlcache_memory_limit.
+
+Authored-by: Xi Lyu <xi.lyu@databricks.com>
+Signed-off-by: Ruifeng Zheng <ruifengz@apache.org>"
